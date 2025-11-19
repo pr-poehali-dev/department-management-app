@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -10,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Icon from '@/components/ui/icon';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import CreateTaskDialog from '@/components/CreateTaskDialog';
+import EmployeeManagement from '@/components/EmployeeManagement';
 
 interface Task {
   id: string;
@@ -111,17 +112,15 @@ const Index = () => {
             <h1 className="text-4xl font-bold font-heading text-foreground">Управление поручениями</h1>
             <p className="text-muted-foreground mt-1">Отслеживайте выполнение задач в реальном времени</p>
           </div>
-          <Button className="gap-2">
-            <Icon name="Plus" size={20} />
-            Новое поручение
-          </Button>
+          <CreateTaskDialog onTaskCreated={fetchTasks} />
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="dashboard">Дашборд</TabsTrigger>
             <TabsTrigger value="tasks">Поручения</TabsTrigger>
             <TabsTrigger value="calendar">Календарь</TabsTrigger>
+            <TabsTrigger value="employees">Сотрудники</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6 animate-fade-in">
@@ -431,6 +430,10 @@ const Index = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="employees" className="space-y-6 animate-fade-in">
+            <EmployeeManagement />
           </TabsContent>
         </Tabs>
       </div>
