@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,6 +106,15 @@ const Index = () => {
     );
   }
 
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('sessionToken');
+    navigate('/login');
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -113,8 +123,18 @@ const Index = () => {
             <h1 className="text-4xl font-bold font-heading text-foreground">Управление поручениями</h1>
             <p className="text-muted-foreground mt-1">Отслеживайте выполнение задач в реальном времени</p>
           </div>
-          <CreateTaskDialog onTaskCreated={fetchTasks} />
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-sm font-medium">{user.fullName}</p>
+              <p className="text-xs text-muted-foreground">{user.role === 'admin' ? 'Администратор' : user.role === 'manager' ? 'Менеджер' : 'Пользователь'}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
+              <Icon name="LogOut" size={16} />
+              Выход
+            </Button>
+          </div>
         </div>
+        <CreateTaskDialog onTaskCreated={fetchTasks} />
 
         <Tabs defaultValue="dashboard" className="space-y-6">
           <TabsList className="grid w-full max-w-2xl grid-cols-4">

@@ -1,5 +1,7 @@
 import json
 import os
+import hashlib
+import secrets
 from typing import Dict, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -11,12 +13,20 @@ def get_db_connection():
         raise ValueError('DATABASE_URL environment variable is not set')
     return psycopg2.connect(database_url, cursor_factory=RealDictCursor)
 
+def hash_password(password: str) -> str:
+    '''Simple password hashing using SHA256'''
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def generate_session_token() -> str:
+    '''Generate random session token'''
+    return secrets.token_urlsafe(32)
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Manage employees and groups - CRUD operations for employee management
+    Business: Manage employees, groups and authentication - CRUD operations
     Args: event - dict with httpMethod, body, queryStringParameters, pathParams
           context - object with request_id, function_name attributes
-    Returns: HTTP response dict with employee/group data or error
+    Returns: HTTP response dict with employee/group/auth data or error
     '''
     method: str = event.get('httpMethod', 'GET')
     query_params = event.get('queryStringParameters') or {}
@@ -28,7 +38,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Session-Token',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
@@ -308,6 +318,80 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Access-Control-Allow-Origin': '*'
                     },
                     'body': json.dumps({'employee': emp_data}),
+                    'isBase64Encoded': False
+                }
+        
+        elif resource == 'auth':
+            if method == 'POST':
+                body_data = json.loads(event.get('body', '{}'))
+                username = body_data.get('username')
+                password = body_data.get('password')
+                
+                if not username or not password:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Username and password are required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                password_hash = hash_password(password)
+                
+                cur.execute(
+                    '''SELECT u.id, u.username, u.full_name, u.role, u.employee_id,
+                              e.full_name as employee_name, e.position
+                       FROM users u
+                       LEFT JOIN employees e ON u.employee_id = e.id
+                       WHERE u.username = %s AND u.password_hash = %s''',
+                    (username, password_hash)
+                )
+                user = cur.fetchone()
+                
+                if not user:
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 401,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Invalid username or password'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute(
+                    'UPDATE users SET last_login = NOW() WHERE id = %s',
+                    (user['id'],)
+                )
+                conn.commit()
+                
+                session_token = generate_session_token()
+                
+                user_data = {
+                    'id': str(user['id']),
+                    'username': user['username'],
+                    'fullName': user['full_name'],
+                    'role': user['role'],
+                    'employeeId': str(user['employee_id']) if user['employee_id'] else None,
+                    'employeeName': user['employee_name'],
+                    'position': user['position'],
+                    'sessionToken': session_token
+                }
+                
+                cur.close()
+                conn.close()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'user': user_data}),
                     'isBase64Encoded': False
                 }
         
