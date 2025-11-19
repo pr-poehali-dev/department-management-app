@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,85 +20,50 @@ interface Task {
   assignee: string;
   dueDate: Date;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    title: 'Подготовить квартальный отчет',
-    description: 'Составить финансовый отчет за Q4',
-    status: 'completed',
-    priority: 'high',
-    assignee: 'Иванов А.С.',
-    dueDate: new Date(2024, 10, 15),
-    createdAt: new Date(2024, 10, 1),
-  },
-  {
-    id: '2',
-    title: 'Провести аудит системы безопасности',
-    description: 'Проверить все точки доступа и протоколы',
-    status: 'in-progress',
-    priority: 'high',
-    assignee: 'Петрова М.В.',
-    dueDate: new Date(2024, 10, 25),
-    createdAt: new Date(2024, 10, 10),
-  },
-  {
-    id: '3',
-    title: 'Обновить базу данных клиентов',
-    description: 'Актуализировать контактную информацию',
-    status: 'pending',
-    priority: 'medium',
-    assignee: 'Сидоров П.К.',
-    dueDate: new Date(2024, 10, 30),
-    createdAt: new Date(2024, 10, 12),
-  },
-  {
-    id: '4',
-    title: 'Разработать маркетинговую стратегию',
-    description: 'План продвижения на 2025 год',
-    status: 'overdue',
-    priority: 'high',
-    assignee: 'Козлова Е.А.',
-    dueDate: new Date(2024, 10, 18),
-    createdAt: new Date(2024, 10, 5),
-  },
-  {
-    id: '5',
-    title: 'Организовать тренинг для сотрудников',
-    description: 'Обучение новым стандартам работы',
-    status: 'pending',
-    priority: 'low',
-    assignee: 'Морозов Д.И.',
-    dueDate: new Date(2024, 11, 5),
-    createdAt: new Date(2024, 10, 15),
-  },
-  {
-    id: '6',
-    title: 'Закупка оборудования',
-    description: 'Новые компьютеры для отдела разработки',
-    status: 'completed',
-    priority: 'medium',
-    assignee: 'Соколова Н.П.',
-    dueDate: new Date(2024, 10, 20),
-    createdAt: new Date(2024, 10, 8),
-  },
-];
+const API_URL = 'https://functions.poehali.dev/80732aa0-05d2-408c-873e-94e2c87320be';
 
 const Index = () => {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const completedTasks = mockTasks.filter((t) => t.status === 'completed').length;
-  const inProgressTasks = mockTasks.filter((t) => t.status === 'in-progress').length;
-  const overdueTasks = mockTasks.filter((t) => t.status === 'overdue').length;
-  const pendingTasks = mockTasks.filter((t) => t.status === 'pending').length;
-  const totalTasks = mockTasks.length;
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      const tasksData = data.tasks.map((task: any) => ({
+        ...task,
+        dueDate: new Date(task.dueDate),
+        createdAt: new Date(task.createdAt),
+        updatedAt: task.updatedAt ? new Date(task.updatedAt) : undefined,
+      }));
+      setTasks(tasksData);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const completedTasks = tasks.filter((t) => t.status === 'completed').length;
+  const inProgressTasks = tasks.filter((t) => t.status === 'in-progress').length;
+  const overdueTasks = tasks.filter((t) => t.status === 'overdue').length;
+  const pendingTasks = tasks.filter((t) => t.status === 'pending').length;
+  const totalTasks = tasks.length;
   const completionRate = Math.round((completedTasks / totalTasks) * 100);
 
-  const filteredTasks = mockTasks.filter((task) => {
+  const filteredTasks = tasks.filter((task) => {
     const matchesStatus = filterStatus === 'all' || task.status === filterStatus;
     const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
     const matchesSearch =
@@ -126,6 +91,17 @@ const Index = () => {
     };
     return colors[priority];
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Загрузка поручений...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -254,7 +230,7 @@ const Index = () => {
                   <CardTitle className="font-heading">Последние активности</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {mockTasks.slice(0, 4).map((task) => (
+                  {tasks.slice(0, 4).map((task) => (
                     <div key={task.id} className="flex items-start gap-3 pb-3 border-b last:border-0">
                       <div
                         className={`w-2 h-2 rounded-full mt-2 ${
@@ -392,7 +368,7 @@ const Index = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {mockTasks
+                  {tasks
                     .filter((task) => selectedDate && task.dueDate.toDateString() === selectedDate.toDateString())
                     .map((task) => (
                       <Card key={task.id}>
@@ -417,7 +393,7 @@ const Index = () => {
                       </Card>
                     ))}
                   {selectedDate &&
-                    mockTasks.filter((task) => task.dueDate.toDateString() === selectedDate.toDateString()).length === 0 && (
+                    tasks.filter((task) => task.dueDate.toDateString() === selectedDate.toDateString()).length === 0 && (
                       <div className="text-center py-12">
                         <Icon name="CalendarOff" className="mx-auto text-muted-foreground mb-3" size={48} />
                         <p className="text-muted-foreground">На эту дату поручений нет</p>
@@ -433,7 +409,7 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockTasks
+                  {tasks
                     .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
                     .slice(0, 5)
                     .map((task) => (

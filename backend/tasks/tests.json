@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "Get all tasks",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Get tasks by status filter",
+      "method": "GET",
+      "path": "/?status=completed",
+      "expectedStatus": 200
+    }
+  ]
+}
