@@ -35,6 +35,9 @@ const EmployeeManagement = () => {
   const [openEmployeeDialog, setOpenEmployeeDialog] = useState(false);
   const [openGroupDialog, setOpenGroupDialog] = useState(false);
   const { toast } = useToast();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userRole = user.role || '';
+  const userGroupId = user.groupId || null;
 
   const [employeeForm, setEmployeeForm] = useState({
     fullName: '',
@@ -163,6 +166,72 @@ const EmployeeManagement = () => {
     }
   };
 
+  const handleDeleteEmployee = async (employeeId: string) => {
+    if (!confirm('Вы уверены, что хотите удалить этого сотрудника?')) return;
+
+    try {
+      const response = await fetch(`${EMPLOYEES_API_URL}/${employeeId}?resource=employees`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete employee');
+
+      toast({
+        title: 'Успешно!',
+        description: 'Сотрудник удален',
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить сотрудника',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    if (!confirm('Вы уверены, что хотите удалить эту группу? Все сотрудники группы останутся без группы.')) return;
+
+    try {
+      const response = await fetch(`${EMPLOYEES_API_URL}/${groupId}?resource=groups`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete group');
+
+      toast({
+        title: 'Успешно!',
+        description: 'Группа удалена',
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить группу',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const canDeleteEmployee = (employee: Employee): boolean => {
+    if (userRole === 'department_head') return true;
+    if (userRole === 'group_head' && employee.groupId === userGroupId) return true;
+    return false;
+  };
+
+  const canAddEmployee = (): boolean => {
+    return userRole === 'department_head' || userRole === 'group_head';
+  };
+
+  const canDeleteGroup = (): boolean => {
+    return userRole === 'department_head';
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -185,7 +254,8 @@ const EmployeeManagement = () => {
               <h3 className="text-xl font-heading font-semibold">Сотрудники</h3>
               <p className="text-sm text-muted-foreground">Всего: {employees.length}</p>
             </div>
-            <Dialog open={openEmployeeDialog} onOpenChange={setOpenEmployeeDialog}>
+            {canAddEmployee() && (
+              <Dialog open={openEmployeeDialog} onOpenChange={setOpenEmployeeDialog}>
               <DialogTrigger asChild>
                 <Button className="gap-2">
                   <Icon name="UserPlus" size={18} />
@@ -251,6 +321,7 @@ const EmployeeManagement = () => {
                 </form>
               </DialogContent>
             </Dialog>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -267,6 +338,16 @@ const EmployeeManagement = () => {
                         {employee.position && <p className="text-sm text-muted-foreground">{employee.position}</p>}
                       </div>
                     </div>
+                    {canDeleteEmployee(employee) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteEmployee(employee.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Icon name="Trash2" size={18} />
+                      </Button>
+                    )}
                   </div>
                   {employee.email && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
@@ -291,7 +372,8 @@ const EmployeeManagement = () => {
               <h3 className="text-xl font-heading font-semibold">Группы</h3>
               <p className="text-sm text-muted-foreground">Всего: {groups.length}</p>
             </div>
-            <Dialog open={openGroupDialog} onOpenChange={setOpenGroupDialog}>
+            {userRole === 'department_head' && (
+              <Dialog open={openGroupDialog} onOpenChange={setOpenGroupDialog}>
               <DialogTrigger asChild>
                 <Button className="gap-2">
                   <Icon name="Plus" size={18} />
@@ -331,6 +413,7 @@ const EmployeeManagement = () => {
                 </form>
               </DialogContent>
             </Dialog>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -349,11 +432,22 @@ const EmployeeManagement = () => {
                     </div>
                   </div>
                 </CardHeader>
-                {group.description && (
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">{group.description}</p>
-                  </CardContent>
-                )}
+                <CardContent>
+                  {group.description && (
+                    <p className="text-sm text-muted-foreground mb-3">{group.description}</p>
+                  )}
+                  {canDeleteGroup() && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteGroup(group.id)}
+                      className="text-destructive hover:text-destructive w-full"
+                    >
+                      <Icon name="Trash2" size={16} className="mr-2" />
+                      Удалить группу
+                    </Button>
+                  )}
+                </CardContent>
               </Card>
             ))}
           </div>

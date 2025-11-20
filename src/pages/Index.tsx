@@ -15,6 +15,7 @@ import CreateTaskDialog from '@/components/CreateTaskDialog';
 import EmployeeManagement from '@/components/EmployeeManagement';
 import DepartmentStructure from '@/components/DepartmentStructure';
 import TaskCard from '@/components/TaskCard';
+import ProfileSettings from '@/components/ProfileSettings';
 
 interface Task {
   id: string;
@@ -160,12 +161,13 @@ const Index = () => {
         <CreateTaskDialog onTaskCreated={fetchTasks} />
 
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full max-w-3xl grid-cols-5">
+          <TabsList className="grid w-full max-w-4xl grid-cols-6">
             <TabsTrigger value="dashboard">Дашборд</TabsTrigger>
             <TabsTrigger value="tasks">Поручения</TabsTrigger>
             <TabsTrigger value="calendar">Календарь</TabsTrigger>
             <TabsTrigger value="employees">Сотрудники</TabsTrigger>
             <TabsTrigger value="structure">Структура</TabsTrigger>
+            <TabsTrigger value="profile">Профиль</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6 animate-fade-in">
@@ -469,6 +471,10 @@ const Index = () => {
 
           <TabsContent value="structure" className="space-y-6 animate-fade-in">
             <DepartmentStructure />
+          </TabsContent>
+
+          <TabsContent value="profile" className="space-y-6 animate-fade-in">
+            <ProfileSettings />
           </TabsContent>
         </Tabs>
       </div>

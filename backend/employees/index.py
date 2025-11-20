@@ -320,6 +320,96 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'employee': emp_data}),
                     'isBase64Encoded': False
                 }
+            
+            elif method == 'DELETE':
+                emp_id = path_params.get('id')
+                
+                if not emp_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Employee ID is required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute('DELETE FROM employees WHERE id = %s RETURNING id', (emp_id,))
+                deleted = cur.fetchone()
+                
+                if not deleted:
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 404,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Employee not found'}),
+                        'isBase64Encoded': False
+                    }
+                
+                conn.commit()
+                cur.close()
+                conn.close()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'message': 'Employee deleted successfully'}),
+                    'isBase64Encoded': False
+                }
+        
+        elif resource == 'groups':
+            if method == 'DELETE':
+                group_id = path_params.get('id')
+                
+                if not group_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Group ID is required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute('UPDATE employees SET group_id = NULL WHERE group_id = %s', (group_id,))
+                cur.execute('DELETE FROM employee_groups WHERE id = %s RETURNING id', (group_id,))
+                deleted = cur.fetchone()
+                
+                if not deleted:
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 404,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Group not found'}),
+                        'isBase64Encoded': False
+                    }
+                
+                conn.commit()
+                cur.close()
+                conn.close()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'message': 'Group deleted successfully'}),
+                    'isBase64Encoded': False
+                }
         
         elif resource == 'auth':
             if method == 'POST':
