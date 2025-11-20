@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import CreateTaskDialog from '@/components/CreateTaskDialog';
 import EmployeeManagement from '@/components/EmployeeManagement';
+import DepartmentStructure from '@/components/DepartmentStructure';
 
 interface Task {
   id: string;
@@ -108,6 +109,15 @@ const Index = () => {
 
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  const getRoleLabel = (role: string) => {
+    const roleLabels: Record<string, string> = {
+      'department_head': 'Начальник отдела',
+      'group_head': 'Начальник группы',
+      'employee': 'Сотрудник'
+    };
+    return roleLabels[role] || role;
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -126,7 +136,7 @@ const Index = () => {
           <div className="flex items-center gap-4">
             <div className="text-right">
               <p className="text-sm font-medium">{user.fullName}</p>
-              <p className="text-xs text-muted-foreground">{user.role === 'admin' ? 'Администратор' : user.role === 'manager' ? 'Менеджер' : 'Пользователь'}</p>
+              <p className="text-xs text-muted-foreground">{getRoleLabel(user.role)}</p>
             </div>
             <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
               <Icon name="LogOut" size={16} />
@@ -137,11 +147,12 @@ const Index = () => {
         <CreateTaskDialog onTaskCreated={fetchTasks} />
 
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5">
             <TabsTrigger value="dashboard">Дашборд</TabsTrigger>
             <TabsTrigger value="tasks">Поручения</TabsTrigger>
             <TabsTrigger value="calendar">Календарь</TabsTrigger>
             <TabsTrigger value="employees">Сотрудники</TabsTrigger>
+            <TabsTrigger value="structure">Структура</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6 animate-fade-in">
@@ -455,6 +466,10 @@ const Index = () => {
 
           <TabsContent value="employees" className="space-y-6 animate-fade-in">
             <EmployeeManagement />
+          </TabsContent>
+
+          <TabsContent value="structure" className="space-y-6 animate-fade-in">
+            <DepartmentStructure />
           </TabsContent>
         </Tabs>
       </div>

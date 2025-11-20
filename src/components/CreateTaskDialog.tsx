@@ -51,7 +51,14 @@ const CreateTaskDialog = ({ onTaskCreated }: CreateTaskDialogProps) => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await fetch(`${EMPLOYEES_API_URL}?resource=employees`);
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      let url = `${EMPLOYEES_API_URL}?resource=employees`;
+      
+      if (user.role === 'group_head' && user.groupId) {
+        url += `&group_id=${user.groupId}`;
+      }
+      
+      const response = await fetch(url);
       const data = await response.json();
       setEmployees(data.employees || []);
     } catch (error) {

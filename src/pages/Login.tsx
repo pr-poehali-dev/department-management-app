@@ -139,13 +139,16 @@ const Login = () => {
               <p className="text-sm font-semibold mb-2">Тестовые аккаунты:</p>
               <div className="space-y-1 text-xs text-muted-foreground">
                 <p>
-                  <strong>admin</strong> / admin123 (Администратор)
+                  <strong>admin</strong> / admin123 (Начальник отдела)
                 </p>
                 <p>
-                  <strong>ivanov</strong> / admin123 (Менеджер)
+                  <strong>ivanov</strong> / admin123 (Начальник группы)
                 </p>
                 <p>
-                  <strong>petrova</strong> / admin123 (Пользователь)
+                  <strong>sidorov</strong> / admin123 (Начальник группы)
+                </p>
+                <p>
+                  <strong>petrova</strong> / admin123 (Сотрудник)
                 </p>
               </div>
             </div>

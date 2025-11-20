@@ -342,9 +342,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 cur.execute(
                     '''SELECT u.id, u.username, u.full_name, u.role, u.employee_id,
-                              e.full_name as employee_name, e.position
+                              e.full_name as employee_name, e.position, e.group_id,
+                              g.name as group_name
                        FROM users u
                        LEFT JOIN employees e ON u.employee_id = e.id
+                       LEFT JOIN employee_groups g ON e.group_id = g.id
                        WHERE u.username = %s AND u.password_hash = %s''',
                     (username, password_hash)
                 )
@@ -379,6 +381,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'employeeId': str(user['employee_id']) if user['employee_id'] else None,
                     'employeeName': user['employee_name'],
                     'position': user['position'],
+                    'groupId': str(user['group_id']) if user['group_id'] else None,
+                    'groupName': user['group_name'],
                     'sessionToken': session_token
                 }
                 
@@ -392,6 +396,60 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Access-Control-Allow-Origin': '*'
                     },
                     'body': json.dumps({'user': user_data}),
+                    'isBase64Encoded': False
+                }
+        
+        elif resource == 'department-structure':
+            if method == 'GET':
+                cur.execute('''
+                    SELECT 
+                        g.id as group_id,
+                        g.name as group_name,
+                        g.description as group_description,
+                        g.manager_id,
+                        m.full_name as manager_name,
+                        m.position as manager_position,
+                        COUNT(e.id) as employee_count,
+                        json_agg(
+                            json_build_object(
+                                'id', e.id,
+                                'fullName', e.full_name,
+                                'position', e.position,
+                                'email', e.email
+                            ) ORDER BY e.full_name
+                        ) FILTER (WHERE e.id IS NOT NULL) as employees
+                    FROM employee_groups g
+                    LEFT JOIN employees m ON g.manager_id = m.id
+                    LEFT JOIN employees e ON e.group_id = g.id
+                    GROUP BY g.id, g.name, g.description, g.manager_id, m.full_name, m.position
+                    ORDER BY g.name
+                ''')
+                
+                groups_data = cur.fetchall()
+                
+                structure = []
+                for group in groups_data:
+                    structure.append({
+                        'groupId': str(group['group_id']),
+                        'groupName': group['group_name'],
+                        'description': group['group_description'],
+                        'managerId': str(group['manager_id']) if group['manager_id'] else None,
+                        'managerName': group['manager_name'],
+                        'managerPosition': group['manager_position'],
+                        'employeeCount': group['employee_count'],
+                        'employees': group['employees'] or []
+                    })
+                
+                cur.close()
+                conn.close()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'structure': structure}),
                     'isBase64Encoded': False
                 }
         
