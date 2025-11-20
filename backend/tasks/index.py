@@ -27,7 +27,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Headers': 'Content-Type, X-User-Role, X-User-Group-Id',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
@@ -160,6 +160,43 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            headers = event.get('headers') or {}
+            user_role = headers.get('X-User-Role') or headers.get('x-user-role')
+            user_group_id = headers.get('X-User-Group-Id') or headers.get('x-user-group-id')
+            
+            if user_role == 'group_head' and user_group_id:
+                cur.execute(
+                    '''SELECT t.id FROM tasks t
+                       JOIN employees e ON t.assignee = e.full_name
+                       WHERE t.id = %s AND e.group_id = %s''',
+                    (task_id, user_group_id)
+                )
+                task_check = cur.fetchone()
+                if not task_check:
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 403,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Access denied: task not in your group'}),
+                        'isBase64Encoded': False
+                    }
+            elif user_role == 'employee':
+                cur.close()
+                conn.close()
+                return {
+                    'statusCode': 403,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': 'Access denied: employees cannot edit tasks'}),
+                    'isBase64Encoded': False
+                }
+            
             body_data = json.loads(event.get('body', '{}'))
             
             update_fields = []
@@ -244,6 +281,43 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Access-Control-Allow-Origin': '*'
                     },
                     'body': json.dumps({'error': 'Task ID is required'}),
+                    'isBase64Encoded': False
+                }
+            
+            headers = event.get('headers') or {}
+            user_role = headers.get('X-User-Role') or headers.get('x-user-role')
+            user_group_id = headers.get('X-User-Group-Id') or headers.get('x-user-group-id')
+            
+            if user_role == 'group_head' and user_group_id:
+                cur.execute(
+                    '''SELECT t.id FROM tasks t
+                       JOIN employees e ON t.assignee = e.full_name
+                       WHERE t.id = %s AND e.group_id = %s''',
+                    (task_id, user_group_id)
+                )
+                task_check = cur.fetchone()
+                if not task_check:
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 403,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Access denied: task not in your group'}),
+                        'isBase64Encoded': False
+                    }
+            elif user_role == 'employee':
+                cur.close()
+                conn.close()
+                return {
+                    'statusCode': 403,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': 'Access denied: employees cannot delete tasks'}),
                     'isBase64Encoded': False
                 }
             

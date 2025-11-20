@@ -14,6 +14,7 @@ import { ru } from 'date-fns/locale';
 import CreateTaskDialog from '@/components/CreateTaskDialog';
 import EmployeeManagement from '@/components/EmployeeManagement';
 import DepartmentStructure from '@/components/DepartmentStructure';
+import TaskCard from '@/components/TaskCard';
 
 interface Task {
   id: string;
@@ -335,40 +336,13 @@ const Index = () => {
                   </div>
                 ) : (
                   filteredTasks.map((task) => (
-                    <Card key={task.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start gap-3 mb-2">
-                              <h3 className="font-semibold text-lg">{task.title}</h3>
-                              <Badge {...getStatusBadge(task.status)} className="shrink-0">
-                                {getStatusBadge(task.status).label}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-3">{task.description}</p>
-                            <div className="flex flex-wrap gap-4 text-sm">
-                              <div className="flex items-center gap-2">
-                                <Icon name="User" size={16} className="text-muted-foreground" />
-                                <span>{task.assignee}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Icon name="Calendar" size={16} className="text-muted-foreground" />
-                                <span>{format(task.dueDate, 'dd MMM yyyy', { locale: ru })}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Icon name="Flag" size={16} className={getPriorityColor(task.priority)} />
-                                <span className={getPriorityColor(task.priority)}>
-                                  {task.priority === 'high' ? 'Высокий' : task.priority === 'medium' ? 'Средний' : 'Низкий'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <Button variant="ghost" size="icon">
-                            <Icon name="MoreVertical" size={20} />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onTaskUpdated={fetchTasks}
+                      userRole={user.role}
+                      userGroupId={user.groupId}
+                    />
                   ))
                 )}
               </CardContent>
