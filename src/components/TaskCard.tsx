@@ -31,6 +31,13 @@ interface Task {
   priority: 'high' | 'medium' | 'low';
   assignee: string;
   dueDate: Date;
+  attachments?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    size: number;
+    uploadedAt: string;
+  }>;
 }
 
 interface TaskCardProps {
@@ -66,6 +73,14 @@ const TaskCard = ({ task, onTaskUpdated, userRole, userGroupId }: TaskCardProps)
       low: 'text-green-600',
     };
     return colors[priority];
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
   const handleStatusChange = async (newStatus: string) => {
@@ -170,6 +185,29 @@ const TaskCard = ({ task, onTaskUpdated, userRole, userGroupId }: TaskCardProps)
                   </span>
                 </div>
               </div>
+              {task.attachments && task.attachments.length > 0 && (
+                <div className="mt-3 pt-3 border-t">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                    <Icon name="Paperclip" size={14} />
+                    <span>Вложения ({task.attachments.length})</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {task.attachments.map((file) => (
+                      <a
+                        key={file.id}
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-2 py-1 rounded bg-muted hover:bg-muted/80 transition-colors text-xs"
+                      >
+                        <Icon name="FileText" size={12} />
+                        <span className="max-w-[150px] truncate">{file.name}</span>
+                        <span className="text-muted-foreground">({formatFileSize(file.size)})</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             {canEdit && (
               <DropdownMenu>

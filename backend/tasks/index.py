@@ -43,7 +43,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             status_filter = query_params.get('status')
             priority_filter = query_params.get('priority')
             
-            query = 'SELECT id, title, description, status, priority, assignee, due_date, created_at, updated_at FROM tasks WHERE 1=1'
+            query = 'SELECT id, title, description, status, priority, assignee, due_date, created_at, updated_at, attachments FROM tasks WHERE 1=1'
             params = []
             
             if status_filter and status_filter != 'all':
@@ -74,7 +74,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'assignee': task['assignee'],
                     'dueDate': task['due_date'].isoformat() if task['due_date'] else None,
                     'createdAt': task['created_at'].isoformat() if task['created_at'] else None,
-                    'updatedAt': task['updated_at'].isoformat() if task['updated_at'] else None
+                    'updatedAt': task['updated_at'].isoformat() if task['updated_at'] else None,
+                    'attachments': task['attachments'] if task['attachments'] else []
                 })
             
             cur.close()
@@ -99,6 +100,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             priority = body_data.get('priority', 'medium')
             assignee = body_data.get('assignee')
             due_date = body_data.get('dueDate')
+            attachments = body_data.get('attachments', [])
             
             if not title or not assignee or not due_date:
                 return {
@@ -112,9 +114,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             cur.execute(
-                '''INSERT INTO tasks (title, description, status, priority, assignee, due_date) 
-                   VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, title, description, status, priority, assignee, due_date, created_at, updated_at''',
-                (title, description, status, priority, assignee, due_date)
+                '''INSERT INTO tasks (title, description, status, priority, assignee, due_date, attachments) 
+                   VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id, title, description, status, priority, assignee, due_date, created_at, updated_at, attachments''',
+                (title, description, status, priority, assignee, due_date, json.dumps(attachments))
             )
             
             new_task = cur.fetchone()
@@ -129,7 +131,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'assignee': new_task['assignee'],
                 'dueDate': new_task['due_date'].isoformat() if new_task['due_date'] else None,
                 'createdAt': new_task['created_at'].isoformat() if new_task['created_at'] else None,
-                'updatedAt': new_task['updated_at'].isoformat() if new_task['updated_at'] else None
+                'updatedAt': new_task['updated_at'].isoformat() if new_task['updated_at'] else None,
+                'attachments': new_task['attachments'] if new_task['attachments'] else []
             }
             
             cur.close()
@@ -220,11 +223,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if 'dueDate' in body_data:
                 update_fields.append('due_date = %s')
                 params.append(body_data['dueDate'])
+            if 'attachments' in body_data:
+                update_fields.append('attachments = %s')
+                params.append(json.dumps(body_data['attachments']))
             
             update_fields.append('updated_at = NOW()')
             params.append(task_id)
             
-            query = f"UPDATE tasks SET {', '.join(update_fields)} WHERE id = %s RETURNING id, title, description, status, priority, assignee, due_date, created_at, updated_at"
+            query = f"UPDATE tasks SET {', '.join(update_fields)} WHERE id = %s RETURNING id, title, description, status, priority, assignee, due_date, created_at, updated_at, attachments"
             
             cur.execute(query, params)
             updated_task = cur.fetchone()
@@ -253,7 +259,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'assignee': updated_task['assignee'],
                 'dueDate': updated_task['due_date'].isoformat() if updated_task['due_date'] else None,
                 'createdAt': updated_task['created_at'].isoformat() if updated_task['created_at'] else None,
-                'updatedAt': updated_task['updated_at'].isoformat() if updated_task['updated_at'] else None
+                'updatedAt': updated_task['updated_at'].isoformat() if updated_task['updated_at'] else None,
+                'attachments': updated_task['attachments'] if updated_task['attachments'] else []
             }
             
             cur.close()

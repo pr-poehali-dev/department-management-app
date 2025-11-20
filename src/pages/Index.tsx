@@ -26,6 +26,13 @@ interface Task {
   dueDate: Date;
   createdAt: Date;
   updatedAt?: Date;
+  attachments?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    size: number;
+    uploadedAt: string;
+  }>;
 }
 
 const API_URL = 'https://functions.poehali.dev/80732aa0-05d2-408c-873e-94e2c87320be';
@@ -36,7 +43,9 @@ const Index = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [filterAssignee, setFilterAssignee] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [assignees, setAssignees] = useState<string[]>([]);
 
   useEffect(() => {
     fetchTasks();
@@ -54,6 +63,9 @@ const Index = () => {
         updatedAt: task.updatedAt ? new Date(task.updatedAt) : undefined,
       }));
       setTasks(tasksData);
+      
+      const uniqueAssignees = Array.from(new Set(tasksData.map((t: Task) => t.assignee)));
+      setAssignees(uniqueAssignees);
     } catch (error) {
       console.error('Error fetching tasks:', error);
     } finally {
@@ -71,11 +83,12 @@ const Index = () => {
   const filteredTasks = tasks.filter((task) => {
     const matchesStatus = filterStatus === 'all' || task.status === filterStatus;
     const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
+    const matchesAssignee = filterAssignee === 'all' || task.assignee === filterAssignee;
     const matchesSearch =
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.assignee.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesPriority && matchesSearch;
+    return matchesStatus && matchesPriority && matchesAssignee && matchesSearch;
   });
 
   const getStatusBadge = (status: Task['status']) => {
@@ -323,6 +336,19 @@ const Index = () => {
                         <SelectItem value="high">Высокий</SelectItem>
                         <SelectItem value="medium">Средний</SelectItem>
                         <SelectItem value="low">Низкий</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterAssignee} onValueChange={setFilterAssignee}>
+                      <SelectTrigger className="w-full lg:w-48">
+                        <SelectValue placeholder="Исполнитель" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Все исполнители</SelectItem>
+                        {assignees.map((assignee) => (
+                          <SelectItem key={assignee} value={assignee}>
+                            {assignee}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

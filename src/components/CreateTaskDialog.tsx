@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+import FileUpload from '@/components/FileUpload';
 
 interface Employee {
   id: string;
@@ -42,6 +43,13 @@ const CreateTaskDialog = ({ onTaskCreated }: CreateTaskDialogProps) => {
     priority: 'medium',
     assignee: '',
   });
+  const [attachments, setAttachments] = useState<Array<{
+    id: string;
+    name: string;
+    url: string;
+    size: number;
+    uploadedAt: string;
+  }>>([]);
 
   useEffect(() => {
     if (open) {
@@ -98,6 +106,7 @@ const CreateTaskDialog = ({ onTaskCreated }: CreateTaskDialogProps) => {
           priority: formData.priority,
           assignee: formData.assignee,
           dueDate: dueDate.toISOString(),
+          attachments: attachments,
         }),
       });
 
@@ -118,6 +127,7 @@ const CreateTaskDialog = ({ onTaskCreated }: CreateTaskDialogProps) => {
         assignee: '',
       });
       setDueDate(undefined);
+      setAttachments([]);
       setOpen(false);
       onTaskCreated();
     } catch (error) {
@@ -229,6 +239,15 @@ const CreateTaskDialog = ({ onTaskCreated }: CreateTaskDialogProps) => {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Вложения</Label>
+            <FileUpload
+              attachments={attachments}
+              onChange={setAttachments}
+              disabled={loading}
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
