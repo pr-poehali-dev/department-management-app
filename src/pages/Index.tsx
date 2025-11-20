@@ -38,6 +38,7 @@ interface Task {
 const API_URL = 'https://functions.poehali.dev/80732aa0-05d2-408c-873e-94e2c87320be';
 
 const Index = () => {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -46,6 +47,7 @@ const Index = () => {
   const [filterAssignee, setFilterAssignee] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [assignees, setAssignees] = useState<string[]>([]);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
     fetchTasks();
@@ -110,20 +112,6 @@ const Index = () => {
     return colors[priority];
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Загрузка поручений...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  
   const getRoleLabel = (role: string) => {
     const roleLabels: Record<string, string> = {
       'department_head': 'Начальник отдела',
@@ -138,6 +126,17 @@ const Index = () => {
     localStorage.removeItem('sessionToken');
     navigate('/login');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Загрузка поручений...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">
