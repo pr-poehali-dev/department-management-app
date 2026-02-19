@@ -22,6 +22,7 @@ import Icon from '@/components/ui/icon';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { API_URLS } from '@/config/api';
 
 interface Task {
   id: string;
@@ -47,7 +48,7 @@ interface TaskCardProps {
   userGroupId: string | null;
 }
 
-const TASKS_API_URL = 'https://functions.poehali.dev/80732aa0-05d2-408c-873e-94e2c87320be';
+const TASKS_API_URL = API_URLS.tasks;
 
 const TaskCard = ({ task, onTaskUpdated, userRole, userGroupId }: TaskCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);

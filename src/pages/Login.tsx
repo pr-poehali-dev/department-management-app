@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+import { API_URLS } from '@/config/api';
 
-const AUTH_API_URL = 'https://functions.poehali.dev/7b3cb6bf-5117-425b-968c-4173f2e6d4f4';
+const AUTH_API_URL = API_URLS.employees;
 
 const Login = () => {
   const [username, setUsername] = useState('');

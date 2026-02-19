@@ -16,6 +16,7 @@ import EmployeeManagement from '@/components/EmployeeManagement';
 import DepartmentStructure from '@/components/DepartmentStructure';
 import TaskCard from '@/components/TaskCard';
 import ProfileSettings from '@/components/ProfileSettings';
+import { API_URLS } from '@/config/api';
 
 interface Task {
   id: string;
@@ -36,7 +37,7 @@ interface Task {
   }>;
 }
 
-const API_URL = 'https://functions.poehali.dev/80732aa0-05d2-408c-873e-94e2c87320be';
+const API_URL = API_URLS.tasks;
 
 const Index = () => {
   const navigate = useNavigate();

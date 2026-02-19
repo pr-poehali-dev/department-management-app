@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+import { API_URLS } from '@/config/api';
 
 interface Employee {
   id: string;
@@ -22,7 +23,7 @@ interface GroupStructure {
   employees: Employee[];
 }
 
-const EMPLOYEES_API_URL = 'https://functions.poehali.dev/7b3cb6bf-5117-425b-968c-4173f2e6d4f4';
+const EMPLOYEES_API_URL = API_URLS.employees;
 
 const DepartmentStructure = () => {
   const [structure, setStructure] = useState<GroupStructure[]>([]);

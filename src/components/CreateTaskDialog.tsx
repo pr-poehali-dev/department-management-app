@@ -12,6 +12,7 @@ import { ru } from 'date-fns/locale';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import FileUpload from '@/components/FileUpload';
+import { API_URLS } from '@/config/api';
 
 interface Employee {
   id: string;
@@ -26,8 +27,8 @@ interface CreateTaskDialogProps {
   onTaskCreated: () => void;
 }
 
-const EMPLOYEES_API_URL = 'https://functions.poehali.dev/7b3cb6bf-5117-425b-968c-4173f2e6d4f4';
-const TASKS_API_URL = 'https://functions.poehali.dev/80732aa0-05d2-408c-873e-94e2c87320be';
+const EMPLOYEES_API_URL = API_URLS.employees;
+const TASKS_API_URL = API_URLS.tasks;
 
 const CreateTaskDialog = ({ onTaskCreated }: CreateTaskDialogProps) => {
   const [open, setOpen] = useState(false);
