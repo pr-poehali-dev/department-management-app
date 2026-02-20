@@ -35,6 +35,8 @@ const EmployeeManagement = () => {
   const [loading, setLoading] = useState(true);
   const [openEmployeeDialog, setOpenEmployeeDialog] = useState(false);
   const [openGroupDialog, setOpenGroupDialog] = useState(false);
+  const [openEditGroupDialog, setOpenEditGroupDialog] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const { toast } = useToast();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userRole = user.role || '';
@@ -48,6 +50,11 @@ const EmployeeManagement = () => {
   });
 
   const [groupForm, setGroupForm] = useState({
+    name: '',
+    description: '',
+  });
+
+  const [editGroupForm, setEditGroupForm] = useState({
     name: '',
     description: '',
   });
@@ -107,21 +114,13 @@ const EmployeeManagement = () => {
 
       if (!response.ok) throw new Error('Failed to create employee');
 
-      toast({
-        title: 'Успешно!',
-        description: 'Сотрудник добавлен',
-      });
-
+      toast({ title: 'Успешно!', description: 'Сотрудник добавлен' });
       setEmployeeForm({ fullName: '', email: '', position: '', groupId: '' });
       setOpenEmployeeDialog(false);
       fetchData();
     } catch (error) {
       console.error('Error creating employee:', error);
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось добавить сотрудника',
-        variant: 'destructive',
-      });
+      toast({ title: 'Ошибка', description: 'Не удалось добавить сотрудника', variant: 'destructive' });
     }
   };
 
@@ -129,11 +128,7 @@ const EmployeeManagement = () => {
     e.preventDefault();
 
     if (!groupForm.name) {
-      toast({
-        title: 'Ошибка',
-        description: 'Введите название группы',
-        variant: 'destructive',
-      });
+      toast({ title: 'Ошибка', description: 'Введите название группы', variant: 'destructive' });
       return;
     }
 
@@ -141,29 +136,52 @@ const EmployeeManagement = () => {
       const response = await fetch(`${EMPLOYEES_API_URL}?resource=groups`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: groupForm.name,
-          description: groupForm.description,
-        }),
+        body: JSON.stringify({ name: groupForm.name, description: groupForm.description }),
       });
 
       if (!response.ok) throw new Error('Failed to create group');
 
-      toast({
-        title: 'Успешно!',
-        description: 'Группа создана',
-      });
-
+      toast({ title: 'Успешно!', description: 'Группа создана' });
       setGroupForm({ name: '', description: '' });
       setOpenGroupDialog(false);
       fetchData();
     } catch (error) {
       console.error('Error creating group:', error);
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось создать группу',
-        variant: 'destructive',
+      toast({ title: 'Ошибка', description: 'Не удалось создать группу', variant: 'destructive' });
+    }
+  };
+
+  const handleOpenEditGroup = (group: Group) => {
+    setEditingGroup(group);
+    setEditGroupForm({ name: group.name, description: group.description || '' });
+    setOpenEditGroupDialog(true);
+  };
+
+  const handleEditGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGroup) return;
+
+    if (!editGroupForm.name) {
+      toast({ title: 'Ошибка', description: 'Введите название группы', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${EMPLOYEES_API_URL}/${editingGroup.id}?resource=groups`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editGroupForm.name, description: editGroupForm.description }),
       });
+
+      if (!response.ok) throw new Error('Failed to update group');
+
+      toast({ title: 'Успешно!', description: 'Группа обновлена' });
+      setOpenEditGroupDialog(false);
+      setEditingGroup(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error updating group:', error);
+      toast({ title: 'Ошибка', description: 'Не удалось обновить группу', variant: 'destructive' });
     }
   };
 
@@ -177,19 +195,11 @@ const EmployeeManagement = () => {
 
       if (!response.ok) throw new Error('Failed to delete employee');
 
-      toast({
-        title: 'Успешно!',
-        description: 'Сотрудник удален',
-      });
-
+      toast({ title: 'Успешно!', description: 'Сотрудник удален' });
       fetchData();
     } catch (error) {
       console.error('Error deleting employee:', error);
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось удалить сотрудника',
-        variant: 'destructive',
-      });
+      toast({ title: 'Ошибка', description: 'Не удалось удалить сотрудника', variant: 'destructive' });
     }
   };
 
@@ -203,19 +213,11 @@ const EmployeeManagement = () => {
 
       if (!response.ok) throw new Error('Failed to delete group');
 
-      toast({
-        title: 'Успешно!',
-        description: 'Группа удалена',
-      });
-
+      toast({ title: 'Успешно!', description: 'Группа удалена' });
       fetchData();
     } catch (error) {
       console.error('Error deleting group:', error);
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось удалить группу',
-        variant: 'destructive',
-      });
+      toast({ title: 'Ошибка', description: 'Не удалось удалить группу', variant: 'destructive' });
     }
   };
 
@@ -229,7 +231,7 @@ const EmployeeManagement = () => {
     return userRole === 'department_head' || userRole === 'group_head';
   };
 
-  const canDeleteGroup = (): boolean => {
+  const canManageGroups = (): boolean => {
     return userRole === 'department_head';
   };
 
@@ -257,71 +259,71 @@ const EmployeeManagement = () => {
             </div>
             {canAddEmployee() && (
               <Dialog open={openEmployeeDialog} onOpenChange={setOpenEmployeeDialog}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Icon name="UserPlus" size={18} />
-                  Добавить сотрудника
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle className="font-heading">Новый сотрудник</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleCreateEmployee} className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">ФИО *</Label>
-                    <Input
-                      id="fullName"
-                      value={employeeForm.fullName}
-                      onChange={(e) => setEmployeeForm({ ...employeeForm, fullName: e.target.value })}
-                      placeholder="Иванов Иван Иванович"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={employeeForm.email}
-                      onChange={(e) => setEmployeeForm({ ...employeeForm, email: e.target.value })}
-                      placeholder="ivanov@company.com"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="position">Должность</Label>
-                    <Input
-                      id="position"
-                      value={employeeForm.position}
-                      onChange={(e) => setEmployeeForm({ ...employeeForm, position: e.target.value })}
-                      placeholder="Менеджер"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="groupId">Группа</Label>
-                    <Select value={employeeForm.groupId} onValueChange={(value) => setEmployeeForm({ ...employeeForm, groupId: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Выберите группу" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Без группы</SelectItem>
-                        {groups.map((group) => (
-                          <SelectItem key={group.id} value={group.id}>
-                            {group.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex justify-end gap-3 pt-4">
-                    <Button type="button" variant="outline" onClick={() => setOpenEmployeeDialog(false)}>
-                      Отмена
-                    </Button>
-                    <Button type="submit">Добавить</Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Icon name="UserPlus" size={18} />
+                    Добавить сотрудника
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle className="font-heading">Новый сотрудник</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleCreateEmployee} className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName">ФИО *</Label>
+                      <Input
+                        id="fullName"
+                        value={employeeForm.fullName}
+                        onChange={(e) => setEmployeeForm({ ...employeeForm, fullName: e.target.value })}
+                        placeholder="Иванов Иван Иванович"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={employeeForm.email}
+                        onChange={(e) => setEmployeeForm({ ...employeeForm, email: e.target.value })}
+                        placeholder="ivanov@company.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="position">Должность</Label>
+                      <Input
+                        id="position"
+                        value={employeeForm.position}
+                        onChange={(e) => setEmployeeForm({ ...employeeForm, position: e.target.value })}
+                        placeholder="Менеджер"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="groupId">Группа</Label>
+                      <Select value={employeeForm.groupId} onValueChange={(value) => setEmployeeForm({ ...employeeForm, groupId: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Выберите группу" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Без группы</SelectItem>
+                          {groups.map((group) => (
+                            <SelectItem key={group.id} value={group.id}>
+                              {group.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4">
+                      <Button type="button" variant="outline" onClick={() => setOpenEmployeeDialog(false)}>
+                        Отмена
+                      </Button>
+                      <Button type="submit">Добавить</Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
             )}
           </div>
 
@@ -373,47 +375,47 @@ const EmployeeManagement = () => {
               <h3 className="text-xl font-heading font-semibold">Группы</h3>
               <p className="text-sm text-muted-foreground">Всего: {groups.length}</p>
             </div>
-            {userRole === 'department_head' && (
+            {canManageGroups() && (
               <Dialog open={openGroupDialog} onOpenChange={setOpenGroupDialog}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Icon name="Plus" size={18} />
-                  Создать группу
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle className="font-heading">Новая группа</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleCreateGroup} className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="groupName">Название *</Label>
-                    <Input
-                      id="groupName"
-                      value={groupForm.name}
-                      onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
-                      placeholder="Отдел разработки"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="groupDescription">Описание</Label>
-                    <Input
-                      id="groupDescription"
-                      value={groupForm.description}
-                      onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
-                      placeholder="Описание группы"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-3 pt-4">
-                    <Button type="button" variant="outline" onClick={() => setOpenGroupDialog(false)}>
-                      Отмена
-                    </Button>
-                    <Button type="submit">Создать</Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Icon name="Plus" size={18} />
+                    Создать группу
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle className="font-heading">Новая группа</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleCreateGroup} className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="groupName">Название *</Label>
+                      <Input
+                        id="groupName"
+                        value={groupForm.name}
+                        onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
+                        placeholder="Отдел разработки"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="groupDescription">Описание</Label>
+                      <Input
+                        id="groupDescription"
+                        value={groupForm.description}
+                        onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
+                        placeholder="Описание группы"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4">
+                      <Button type="button" variant="outline" onClick={() => setOpenGroupDialog(false)}>
+                        Отмена
+                      </Button>
+                      <Button type="submit">Создать</Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
             )}
           </div>
 
@@ -433,20 +435,31 @@ const EmployeeManagement = () => {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   {group.description && (
-                    <p className="text-sm text-muted-foreground mb-3">{group.description}</p>
+                    <p className="text-sm text-muted-foreground">{group.description}</p>
                   )}
-                  {canDeleteGroup() && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteGroup(group.id)}
-                      className="text-destructive hover:text-destructive w-full"
-                    >
-                      <Icon name="Trash2" size={16} className="mr-2" />
-                      Удалить группу
-                    </Button>
+                  {canManageGroups() && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenEditGroup(group)}
+                        className="flex-1 gap-2"
+                      >
+                        <Icon name="Pencil" size={14} />
+                        Редактировать
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteGroup(group.id)}
+                        className="text-destructive hover:text-destructive gap-2"
+                      >
+                        <Icon name="Trash2" size={14} />
+                        Удалить
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -454,6 +467,41 @@ const EmployeeManagement = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={openEditGroupDialog} onOpenChange={setOpenEditGroupDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-heading">Редактировать группу</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditGroup} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="editGroupName">Название *</Label>
+              <Input
+                id="editGroupName"
+                value={editGroupForm.name}
+                onChange={(e) => setEditGroupForm({ ...editGroupForm, name: e.target.value })}
+                placeholder="Отдел разработки"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editGroupDescription">Описание</Label>
+              <Input
+                id="editGroupDescription"
+                value={editGroupForm.description}
+                onChange={(e) => setEditGroupForm({ ...editGroupForm, description: e.target.value })}
+                placeholder="Описание группы"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={() => setOpenEditGroupDialog(false)}>
+                Отмена
+              </Button>
+              <Button type="submit">Сохранить</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

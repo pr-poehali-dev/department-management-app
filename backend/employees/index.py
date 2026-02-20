@@ -366,7 +366,65 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
         
         elif resource == 'groups':
-            if method == 'DELETE':
+            if method == 'PUT':
+                group_id = path_params.get('id')
+                
+                if not group_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Group ID is required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                body_data = json.loads(event.get('body', '{}'))
+                name = body_data.get('name')
+                description = body_data.get('description', '')
+                
+                if not name:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Group name is required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute(
+                    'UPDATE employee_groups SET name = %s, description = %s WHERE id = %s RETURNING id, name, description, created_at',
+                    (name, description, group_id)
+                )
+                updated = cur.fetchone()
+                
+                if not updated:
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 404,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Group not found'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute('SELECT COUNT(*) as cnt FROM employees WHERE group_id = %s', (group_id,))
+                cnt_row = cur.fetchone()
+                conn.commit()
+                cur.close()
+                conn.close()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'group': {
+                        'id': str(updated['id']),
+                        'name': updated['name'],
+                        'description': updated['description'],
+                        'employeeCount': cnt_row['cnt'] if cnt_row else 0,
+                        'createdAt': updated['created_at'].isoformat() if updated['created_at'] else None
+                    }}),
+                    'isBase64Encoded': False
+                }
+            
+            elif method == 'DELETE':
                 group_id = path_params.get('id')
                 
                 if not group_id:
